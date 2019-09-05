@@ -6,6 +6,8 @@
 #define MAX_LENGTH 1024
 #define START_MEASUREMENT "start_measurement"
 
+static const char DEVICE_NAME1[] = "xdma";
+
 struct sysctl_data {
     struct ctl_table ctl_table[2];
     struct ctl_path ctl_path[3];
@@ -41,7 +43,7 @@ int init_sysctl(struct sysctl_data **sysctl_data, const char device_name[])
 
     ctl_path = (*sysctl_data)->ctl_path;
     ctl_path[0].procname = "dev";
-    ctl_path[1].procname = "xdma";
+    ctl_path[1].procname = device_name;
 
     ctl_table = (*sysctl_data)->ctl_table;
     ctl_table[0].procname = "start_measurement";
@@ -76,7 +78,7 @@ void free_sysctl(struct sysctl_data *sysctl_data)
 
 static int __init xdma_init(void)
 {
-    return init_sysctl(&sysctl_data, "");
+    return init_sysctl(&sysctl_data, DEVICE_NAME1);
 }
 
 void __exit xdma_exit(void)
