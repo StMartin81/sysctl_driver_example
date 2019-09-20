@@ -1,6 +1,7 @@
 #include <linux/completion.h>
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/rwsem.h>
 #include <linux/slab.h>
 #include <linux/sysctl.h>
 
@@ -17,6 +18,7 @@ struct sysctl_data
   struct ctl_path ctl_path[3];
   struct completion measurement_data_ready;
   struct ctl_table_header* ctl_table_header;
+  struct rw_semaphore lock;
   char data[DATA_MAX_SIZE];
 };
 
@@ -48,7 +50,9 @@ start_measurement(struct ctl_table* ctl,
   else if (ret == 0)
     return -ETIME;
 
+  down_read(&data->lock);
   ret = proc_dostring(&tmp_table, write, buffer, lenp, ppos);
+  up_read(&data->lock);
 
   return ret;
 }
@@ -72,7 +76,9 @@ measurement_finished(struct ctl_table* ctl,
     return 0;
   }
 
+  down_write(&data->lock);
   ret = proc_dostring(&tmp_table, write, buffer, lenp, ppos);
+  up_write(&data->lock);
   complete(&(data->measurement_data_ready));
 
   return ret;
@@ -120,6 +126,8 @@ init_sysctl(struct sysctl_data** sysctl_data, const char device_name[])
   ctl_table[MEASUREMENT_FINISHED_IDX].proc_handler = measurement_finished;
 
   init_completion(&((*sysctl_data)->measurement_data_ready));
+
+  init_rwsem(&(*sysctl_data)->lock);
 
   (*sysctl_data)->ctl_table_header = register_sysctl_paths(ctl_path, ctl_table);
   return 0;
