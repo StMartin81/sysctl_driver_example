@@ -83,7 +83,6 @@ free_sysctl(struct sysctl_data* sysctl_data)
 {
   if (sysctl_data) {
     unregister_sysctl_table(sysctl_data->ctl_table_header);
-    kfree(sysctl_data->data);
   }
   kfree(sysctl_data);
   sysctl_data = NULL;
@@ -100,8 +99,7 @@ init_sysctl(struct sysctl_data** sysctl_data, const char device_name[])
 
   if (!(*sysctl_data = kzalloc(sizeof(struct sysctl_data), GFP_KERNEL))) {
     pr_err("Can not allocate memory for sysctl_data structure\n");
-    retval = -ENOMEM;
-    goto sysctl_data_alloc;
+    return -ENOMEM;
   }
 
   ctl_path = (*sysctl_data)->ctl_path;
@@ -125,10 +123,6 @@ init_sysctl(struct sysctl_data** sysctl_data, const char device_name[])
 
   (*sysctl_data)->ctl_table_header = register_sysctl_paths(ctl_path, ctl_table);
   return 0;
-
-sysctl_data_alloc:
-  free_sysctl(*sysctl_data);
-  return retval;
 }
 
 static int __init
